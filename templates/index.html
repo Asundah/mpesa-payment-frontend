@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M-Pesa Payment</title>
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .card {
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            border: none;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border-radius: 20px 20px 0 0 !important;
+            padding: 20px;
+            text-align: center;
+        }
+        .card-header h2 {
+            margin: 0;
+        }
+        .mpesa-logo {
+            font-size: 3rem;
+            margin-right: 10px;
+        }
+        .btn-mpesa {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-weight: bold;
+            border-radius: 50px;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        .btn-mpesa:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(79, 172, 254, 0.4);
+        }
+        .form-control {
+            border-radius: 10px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s;
+        }
+        .form-control:focus {
+            border-color: #4facfe;
+            box-shadow: 0 0 0 0.2rem rgba(79, 172, 254, 0.25);
+        }
+        .input-group-text {
+            border-radius: 10px 0 0 10px;
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-right: none;
+        }
+        .alert {
+            border-radius: 10px;
+            display: none;
+        }
+        .alert.show {
+            display: block;
+        }
+        .loader {
+            display: none;
+            text-align: center;
+            padding: 10px;
+        }
+        .loader.show {
+            display: block;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .transaction-id {
+            font-size: 12px;
+            color: #666;
+            background: #f8f9fa;
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>
+                            <i class="fas fa-mobile-alt mpesa-logo"></i>
+                            M-Pesa Payment
+                        </h2>
+                        <p class="mb-0">Lipa Na M-Pesa Online</p>
+                    </div>
+                    <div class="card-body p-4">
+                        
+                        <!-- Status Alert -->
+                        <div id="alert" class="alert"></div>
+                        
+                        <!-- Loader -->
+                        <div id="loader" class="loader">
+                            <div class="spinner"></div>
+                            <p class="mt-2 text-muted">Processing payment...</p>
+                        </div>
+
+                        <!-- Payment Form -->
+                        <form id="paymentForm">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-phone"></i> Phone Number
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">+254</span>
+                                    <input type="tel" 
+                                           id="phoneNumber" 
+                                           class="form-control" 
+                                           placeholder="712345678" 
+                                           required>
+                                </div>
+                                <small class="text-muted">Enter phone number without leading 0</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-coins"></i> Amount (KES)
+                                </label>
+                                <input type="number" 
+                                       id="amount" 
+                                       class="form-control" 
+                                       placeholder="Enter amount" 
+                                       min="1" 
+                                       required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-tag"></i> Account Reference
+                                </label>
+                                <input type="text" 
+                                       id="accountReference" 
+                                       class="form-control" 
+                                       placeholder="Order# or Account#" 
+                                       value="PAYMENT001">
+                            </div>
+
+                            <button type="submit" class="btn-mpesa" id="payButton">
+                                <i class="fas fa-check-circle"></i> Pay Now
+                            </button>
+                        </form>
+
+                        <hr>
+
+                        <div class="text-center">
+                            <small class="text-muted">
+                                <i class="fas fa-shield-alt"></i> 
+                                Secure payment powered by M-Pesa
+                            </small>
+                            <br>
+                            <small class="text-muted transaction-id" id="transactionId"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const form = document.getElementById('paymentForm');
+        const alert = document.getElementById('alert');
+        const loader = document.getElementById('loader');
+        const payButton = document.getElementById('payButton');
+        const transactionId = document.getElementById('transactionId');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Get form values
+            const phoneNumber = '254' + document.getElementById('phoneNumber').value.trim();
+            const amount = parseFloat(document.getElementById('amount').value);
+            const accountReference = document.getElementById('accountReference').value.trim();
+
+            // Validate
+            if (!phoneNumber || phoneNumber.length < 12) {
+                showAlert('Please enter a valid phone number', 'danger');
+                return;
+            }
+            
+            if (!amount || amount < 1) {
+                showAlert('Please enter a valid amount (minimum KES 1)', 'danger');
+                return;
+            }
+
+            // Show loader, hide alert
+            loader.classList.add('show');
+            payButton.disabled = true;
+            hideAlert();
+
+            try {
+                const response = await fetch('/api/initiate-payment', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        phone_number: phoneNumber,
+                        amount: amount,
+                        account_reference: accountReference,
+                        transaction_desc: 'Payment from Web'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    showAlert(
+                        '✅ ' + data.message + ' Check your phone for the M-Pesa prompt.',
+                        'success'
+                    );
+                    if (data.checkout_request_id) {
+                        transactionId.textContent = 'Transaction ID: ' + data.checkout_request_id;
+                    }
+                } else {
+                    showAlert('❌ ' + data.message, 'danger');
+                }
+            } catch (error) {
+                showAlert('❌ Something went wrong. Please try again.', 'danger');
+                console.error('Error:', error);
+            } finally {
+                loader.classList.remove('show');
+                payButton.disabled = false;
+            }
+        });
+
+        function showAlert(message, type) {
+            alert.textContent = message;
+            alert.className = `alert alert-${type} show`;
+        }
+
+        function hideAlert() {
+            alert.className = 'alert';
+            alert.textContent = '';
+        }
+    </script>
+</body>
+</html>
